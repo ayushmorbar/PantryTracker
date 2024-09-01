@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Box, Stack, Typography, Button, Modal, TextField, CircularProgress, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, Snackbar, IconButton, Tooltip, Link } from '@mui/material'
+import { Box, Stack, Typography, Button, Modal, TextField, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, Snackbar, IconButton, Tooltip, Link, Pagination } from '@mui/material'
 import { Add as AddIcon, Remove as RemoveIcon, Close as CloseIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, SortByAlpha as SortByAlphaIcon, FilterList as FilterListIcon } from '@mui/icons-material'
 import { firestore } from '@/firebase'
 import {
@@ -39,6 +39,10 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState(true)
   const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [snackbarMessage, setSnackbarMessage] = useState('')
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   const updateInventory = async () => {
     setLoading(true)
@@ -133,6 +137,20 @@ export default function Home() {
     setSnackbarOpen(false)
   }
 
+  // Calculate the items to display based on the current page
+  const indexOfLastItem = currentPage * itemsPerPage
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const currentItems = inventory
+    .filter(({ name }) => name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      if (sortOrder.field === 'name') {
+        return sortOrder.direction === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
+      } else {
+        return sortOrder.direction === 'asc' ? a.quantity - b.quantity : b.quantity - a.quantity
+      }
+    })
+    .slice(indexOfFirstItem, indexOfLastItem)
+
   return (
     <Box
       width="100vw"
@@ -206,7 +224,7 @@ export default function Home() {
       {loading && <CircularProgress />}
       {error && <Typography color="error">{error}</Typography>}
       <Card sx={{ width: '80%', borderRadius: 2, boxShadow: 3, bgcolor: darkMode ? 'var(--box-bg-dark)' : 'var(--box-bg-light)' }}>
-        <CardContent>
+        <CardContent sx={{ overflow: 'auto', maxHeight: '60vh' }}>
           <TableContainer component={Paper} sx={{ bgcolor: darkMode ? 'var(--box-bg-dark)' : 'var(--box-bg-light)' }}>
             <Box display="flex" alignItems="center" width="100%" marginBottom={2}>
               <TextField
@@ -237,43 +255,42 @@ export default function Home() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {inventory
-                  .filter(({ name }) => name.toLowerCase().includes(searchQuery.toLowerCase()))
-                  .sort((a, b) => {
-                    if (sortOrder.field === 'name') {
-                      return sortOrder.direction === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
-                    } else {
-                      return sortOrder.direction === 'asc' ? a.quantity - b.quantity : b.quantity - a.quantity
-                    }
-                  })
-                  .map(({ name, quantity }) => (
-                    <TableRow key={name} hover>
-                      <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)' }}>{name.charAt(0).toUpperCase() + name.slice(1)}</TableCell>
-                      <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)' }}>{quantity}</TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={2}>
-                          <Tooltip title="Add">
-                            <IconButton
-                              onClick={() => addItem(name)}
-                              sx={{ borderColor: 'var(--primary-light)', color: 'var(--primary-light)', '&:hover': { borderColor: 'var(--primary-dark)', color: 'var(--primary-dark)' } }}
-                            >
-                              <AddIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Remove">
-                            <IconButton
-                              onClick={() => removeItem(name)}
-                              sx={{ borderColor: 'var(--secondary-light)', color: 'var(--secondary-light)', '&:hover': { borderColor: 'var(--secondary-dark)', color: 'var(--secondary-dark)' } }}
-                            >
-                              <RemoveIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                {currentItems.map(({ name, quantity }) => (
+                  <TableRow key={name} hover>
+                    <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)' }}>{name.charAt(0).toUpperCase() + name.slice(1)}</TableCell>
+                    <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)' }}>{quantity}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={2}>
+                        <Tooltip title="Add">
+                          <IconButton
+                            onClick={() => addItem(name)}
+                            sx={{ borderColor: 'var(--primary-light)', color: 'var(--primary-light)', '&:hover': { borderColor: 'var(--primary-dark)', color: 'var(--primary-dark)' } }}
+                          >
+                            <AddIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Remove">
+                          <IconButton
+                            onClick={() => removeItem(name)}
+                            sx={{ borderColor: 'var(--secondary-light)', color: 'var(--secondary-light)', '&:hover': { borderColor: 'var(--secondary-dark)', color: 'var(--secondary-dark)' } }}
+                          >
+                            <RemoveIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
+            <Box display="flex" justifyContent="center" marginTop={2} paddingBottom={2}>
+              <Pagination
+                count={Math.ceil(inventory.length / itemsPerPage)}
+                page={currentPage}
+                onChange={(event, value) => setCurrentPage(value)}
+                color="primary"
+              />
+            </Box>
           </TableContainer>
         </CardContent>
       </Card>
