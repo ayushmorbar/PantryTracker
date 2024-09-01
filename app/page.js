@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Box, Stack, Typography, Button, Modal, TextField, CircularProgress, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, Snackbar, IconButton, Tooltip, Link } from '@mui/material'
-import { Add as AddIcon, Remove as RemoveIcon, Close as CloseIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon } from '@mui/icons-material'
+import { Box, Stack, Typography, Button, Modal, TextField, CircularProgress, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, Snackbar, IconButton, Tooltip, Link, AppBar, Toolbar, Drawer, List, ListItem, ListItemIcon, ListItemText, Divider } from '@mui/material'
+import { Add as AddIcon, Remove as RemoveIcon, Close as CloseIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Menu as MenuIcon, Home as HomeIcon, Info as InfoIcon } from '@mui/icons-material'
 import { firestore } from '@/firebase'
 import {
   collection,
@@ -39,6 +39,7 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState(true)
   const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [snackbarMessage, setSnackbarMessage] = useState('')
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const updateInventory = async () => {
     setLoading(true)
@@ -128,26 +129,61 @@ export default function Home() {
     setSnackbarOpen(false)
   }
 
+  const toggleDrawer = (open) => (event) => {
+    if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
+      return
+    }
+    setDrawerOpen(open)
+  }
+
+  const drawerList = (
+    <Box
+      sx={{ width: 250 }}
+      role="presentation"
+      onClick={toggleDrawer(false)}
+      onKeyDown={toggleDrawer(false)}
+    >
+      <List>
+        <ListItem button>
+          <ListItemIcon><HomeIcon /></ListItemIcon>
+          <ListItemText primary="Home" />
+        </ListItem>
+        <ListItem button>
+          <ListItemIcon><InfoIcon /></ListItemIcon>
+          <ListItemText primary="About" />
+        </ListItem>
+      </List>
+      <Divider />
+    </Box>
+  )
+
   return (
     <Box
       width="100vw"
       height="100vh"
       display="flex"
-      justifyContent="center"
       flexDirection="column"
       alignItems="center"
       gap={2}
       padding={3}
       bgcolor={darkMode ? 'var(--background-dark)' : 'var(--background-light)'}
     >
-      <Box display="flex" justifyContent="flex-end" width="100%" padding={2} position="absolute" top={0} right={0}>
-        <IconButton onClick={() => setDarkMode(!darkMode)} color="inherit">
-          {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
-        </IconButton>
-      </Box>
-      <Typography variant="h3" component="h1" gutterBottom>
-        Inventory Management System
-      </Typography>
+      <AppBar position="static">
+        <Toolbar>
+          <IconButton edge="start" color="inherit" aria-label="menu" onClick={toggleDrawer(true)}>
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            Inventory Management System
+          </Typography>
+          <IconButton onClick={() => setDarkMode(!darkMode)} color="inherit">
+            {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+          </IconButton>
+        </Toolbar>
+      </AppBar>
+      <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
+        {drawerList}
+      </Drawer>
       <Typography variant="body1" gutterBottom>
         Keep track of your inventory items with ease.
       </Typography>
@@ -195,6 +231,7 @@ export default function Home() {
         variant="contained"
         onClick={handleOpen}
         sx={{ bgcolor: 'var(--primary-light)', '&:hover': { bgcolor: 'var(--primary-dark)' } }}
+        startIcon={<AddIcon />}
       >
         Add New Item
       </Button>
