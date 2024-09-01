@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Box, Stack, Typography, Button, Modal, TextField, CircularProgress, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, Snackbar, IconButton, Tooltip, Link } from '@mui/material'
-import { Add as AddIcon, Remove as RemoveIcon, Close as CloseIcon } from '@mui/icons-material'
+import { Add as AddIcon, Remove as RemoveIcon, Close as CloseIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon } from '@mui/icons-material'
 import { firestore } from '@/firebase'
 import {
   collection,
@@ -141,8 +141,9 @@ export default function Home() {
       bgcolor={darkMode ? 'var(--background-dark)' : 'var(--background-light)'}
     >
       <Box display="flex" justifyContent="flex-end" width="100%" padding={2} position="absolute" top={0} right={0}>
-        <Typography variant="body1" color={darkMode ? 'var(--text-dark)' : 'var(--text-light)'}>Dark Mode</Typography>
-        <Switch checked={darkMode} onChange={() => setDarkMode(!darkMode)} />
+        <IconButton onClick={() => setDarkMode(!darkMode)} color="inherit">
+          {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+        </IconButton>
       </Box>
       <Typography variant="h3" component="h1" gutterBottom>
         Inventory Management System
