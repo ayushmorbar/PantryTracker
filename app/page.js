@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Box, Stack, Typography, Button, Modal, TextField, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, Snackbar, IconButton, Tooltip, Link, Pagination } from '@mui/material'
-import { Add as AddIcon, Remove as RemoveIcon, Close as CloseIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, SortByAlpha as SortByAlphaIcon, FilterList as FilterListIcon } from '@mui/icons-material'
+import { Add as AddIcon, Remove as RemoveIcon, Close as CloseIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, SortByAlpha as SortByAlphaIcon, FilterList as FilterListIcon, Edit as EditIcon } from '@mui/icons-material'
 import { firestore } from '@/firebase'
 import {
   collection,
@@ -126,6 +126,50 @@ export default function Home() {
   // Sorting functionality
   const [sortOrder, setSortOrder] = useState({ field: 'name', direction: 'asc' })
 
+  // Edit item functionality
+  const [editOpen, setEditOpen] = useState(false)
+  const [editItem, setEditItem] = useState(null)
+  const [editName, setEditName] = useState('')
+  const [editQuantity, setEditQuantity] = useState('')
+  
+  const handleEditOpen = (item) => {
+    setEditItem(item)
+    setEditName(item.name)
+    setEditQuantity(item.quantity)
+    setEditOpen(true)
+  }
+  
+  const handleEditClose = () => {
+    setEditOpen(false)
+    setEditItem(null)
+    setEditName('')
+    setEditQuantity('')
+  }
+  
+  const updateItem = async (item, newName, newQuantity) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const docRef = doc(collection(firestore, 'inventory'), item.name)
+      const newDocRef = doc(collection(firestore, 'inventory'), newName)
+      const quantityToUpdate = newQuantity ? parseInt(newQuantity, 10) : 1
+      if (item.name !== newName) {
+        await deleteDoc(docRef)
+      }
+      await setDoc(newDocRef, { quantity: quantityToUpdate })
+      await updateInventory()
+      setSnackbarMessage('Item updated successfully')
+      setSnackbarOpen(true)
+    } catch (err) {
+      setError('Failed to update item')
+      setSnackbarMessage('Failed to update item')
+      setSnackbarOpen(true)
+    } finally {
+      setLoading(false)
+      handleEditClose()
+    }
+  }
+
   const handleOpen = () => setOpen(true)
   const handleClose = () => {
     setOpen(false)
@@ -162,6 +206,7 @@ export default function Home() {
       gap={2}
       padding={3}
       bgcolor={darkMode ? 'var(--background-dark)' : 'var(--background-light)'}
+      overflowY="auto"
     >
       <Box display="flex" justifyContent="flex-end" width="100%" padding={2} position="absolute" top={0} right={0}>
         <IconButton onClick={() => setDarkMode(!darkMode)} color="inherit">
@@ -214,6 +259,43 @@ export default function Home() {
           </Stack>
         </Box>
       </Modal>
+      <Modal
+        open={editOpen}
+        onClose={handleEditClose}
+        aria-labelledby="edit-modal-title"
+        aria-describedby="edit-modal-description"
+      >
+        <Box sx={{ ...style, bgcolor: darkMode ? 'var(--modal-bg-dark)' : 'var(--modal-bg-light)' }}>
+          <Typography id="edit-modal-title" variant="h6" component="h2" marginBottom={2}>
+            Edit Item
+          </Typography>
+          <Stack width="100%" direction="column" spacing={2}>
+            <TextField
+              id="edit-item-name"
+              label="Item Name"
+              variant="outlined"
+              fullWidth
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+            />
+            <TextField
+              id="edit-item-quantity"
+              label="Quantity"
+              variant="outlined"
+              fullWidth
+              value={editQuantity}
+              onChange={(e) => setEditQuantity(e.target.value)}
+            />
+            <Button
+              variant="contained"
+              onClick={() => updateItem(editItem, editName, editQuantity)}
+              sx={{ bgcolor: 'var(--primary-light)', '&:hover': { bgcolor: 'var(--primary-dark)' } }}
+            >
+              Update
+            </Button>
+          </Stack>
+        </Box>
+      </Modal>
       <Button
         variant="contained"
         onClick={handleOpen}
@@ -224,7 +306,7 @@ export default function Home() {
       {loading && <CircularProgress />}
       {error && <Typography color="error">{error}</Typography>}
       <Card sx={{ width: '80%', borderRadius: 2, boxShadow: 3, bgcolor: darkMode ? 'var(--box-bg-dark)' : 'var(--box-bg-light)' }}>
-        <CardContent sx={{ overflow: 'auto', maxHeight: '60vh' }}>
+        <CardContent>
           <TableContainer component={Paper} sx={{ bgcolor: darkMode ? 'var(--box-bg-dark)' : 'var(--box-bg-light)' }}>
             <Box display="flex" alignItems="center" width="100%" marginBottom={2}>
               <TextField
@@ -277,8 +359,16 @@ export default function Home() {
                             <RemoveIcon />
                           </IconButton>
                         </Tooltip>
+                        <Tooltip title="Edit">
+                          <IconButton
+                            onClick={() => handleEditOpen({ name, quantity })}
+                            sx={{ borderColor: 'var(--edit-light)', color: 'var(--edit-light)', '&:hover': { borderColor: 'var(--edit-dark)', color: 'var(--edit-dark)' } }}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
                       </Stack>
-                    </TableCell>
+                  </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
