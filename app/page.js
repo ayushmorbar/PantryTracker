@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Box, Stack, Typography, Button, Modal, TextField, CircularProgress, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, Snackbar, IconButton, Tooltip, Link } from '@mui/material'
-import { Add as AddIcon, Remove as RemoveIcon, Close as CloseIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon } from '@mui/icons-material'
+import { Add as AddIcon, Remove as RemoveIcon, Close as CloseIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, SortByAlpha as SortByAlphaIcon, FilterList as FilterListIcon } from '@mui/icons-material'
 import { firestore } from '@/firebase'
 import {
   collection,
@@ -116,8 +116,11 @@ export default function Home() {
       setLoading(false)
     }
   }
-
+  // Search functionality
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Sorting functionality
+  const [sortOrder, setSortOrder] = useState({ field: 'name', direction: 'asc' })
 
   const handleOpen = () => setOpen(true)
   const handleClose = () => {
@@ -205,14 +208,26 @@ export default function Home() {
       <Card sx={{ width: '80%', borderRadius: 2, boxShadow: 3, bgcolor: darkMode ? 'var(--box-bg-dark)' : 'var(--box-bg-light)' }}>
         <CardContent>
           <TableContainer component={Paper} sx={{ bgcolor: darkMode ? 'var(--box-bg-dark)' : 'var(--box-bg-light)' }}>
-          <TextField
-            label="Search"
-            variant="outlined"
-            fullWidth
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ marginBottom: 2 }}
-          />
+            <Box display="flex" alignItems="center" width="100%" marginBottom={2}>
+              <TextField
+                label="Search"
+                variant="outlined"
+                fullWidth
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                sx={{ marginRight: 2 }}
+              />
+              <Tooltip title="Sort by Name">
+                <IconButton onClick={() => setSortOrder({ field: 'name', direction: sortOrder.direction === 'asc' ? 'desc' : 'asc' })}>
+                  <SortByAlphaIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Sort by Quantity">
+                <IconButton onClick={() => setSortOrder({ field: 'quantity', direction: sortOrder.direction === 'asc' ? 'desc' : 'asc' })}>
+                  <FilterListIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
             <Table>
               <TableHead>
                 <TableRow>
@@ -222,34 +237,41 @@ export default function Home() {
                 </TableRow>
               </TableHead>
               <TableBody>
-              {inventory
-              .filter(({ name }) => name.toLowerCase().includes(searchQuery.toLowerCase()))
-              .map(({ name, quantity }) => (
-                <TableRow key={name} hover>
-                  <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)' }}>{name.charAt(0).toUpperCase() + name.slice(1)}</TableCell>
-                  <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)' }}>{quantity}</TableCell>
-                  <TableCell>
-                    <Stack direction="row" spacing={2}>
-                      <Tooltip title="Add">
-                        <IconButton
-                          onClick={() => addItem(name)}
-                          sx={{ borderColor: 'var(--primary-light)', color: 'var(--primary-light)', '&:hover': { borderColor: 'var(--primary-dark)', color: 'var(--primary-dark)' } }}
-                        >
-                          <AddIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Remove">
-                        <IconButton
-                          onClick={() => removeItem(name)}
-                          sx={{ borderColor: 'var(--secondary-light)', color: 'var(--secondary-light)', '&:hover': { borderColor: 'var(--secondary-dark)', color: 'var(--secondary-dark)' } }}
-                        >
-                          <RemoveIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
-                  </TableCell>
-                </TableRow>
-              ))}
+                {inventory
+                  .filter(({ name }) => name.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .sort((a, b) => {
+                    if (sortOrder.field === 'name') {
+                      return sortOrder.direction === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
+                    } else {
+                      return sortOrder.direction === 'asc' ? a.quantity - b.quantity : b.quantity - a.quantity
+                    }
+                  })
+                  .map(({ name, quantity }) => (
+                    <TableRow key={name} hover>
+                      <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)' }}>{name.charAt(0).toUpperCase() + name.slice(1)}</TableCell>
+                      <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)' }}>{quantity}</TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={2}>
+                          <Tooltip title="Add">
+                            <IconButton
+                              onClick={() => addItem(name)}
+                              sx={{ borderColor: 'var(--primary-light)', color: 'var(--primary-light)', '&:hover': { borderColor: 'var(--primary-dark)', color: 'var(--primary-dark)' } }}
+                            >
+                              <AddIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Remove">
+                            <IconButton
+                              onClick={() => removeItem(name)}
+                              sx={{ borderColor: 'var(--secondary-light)', color: 'var(--secondary-light)', '&:hover': { borderColor: 'var(--secondary-dark)', color: 'var(--secondary-dark)' } }}
+                            >
+                              <RemoveIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
           </TableContainer>
