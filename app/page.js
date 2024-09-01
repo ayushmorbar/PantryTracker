@@ -308,11 +308,11 @@ export default function Home() {
       <Box component="footer" mt={4} textAlign="center">
         <Typography variant="body2" color={darkMode ? 'var(--text-dark)' : 'var(--text-light)'}>
           Made with ❤️ by 
-          <Link href="https://www.linkedin.com/in/ayush-morbar/" target="_blank" rel="noopener" color="inherit" sx={{ marginLeft: 1, marginRight: 1 }}>
+          <Link href="https://www.linkedin.com/in/ayushmorbar/" target="_blank" rel="noopener" color="inherit" sx={{ marginLeft: 1, marginRight: 1 }}>
             Ayush Morbar
           </Link>
           and 
-          <Link href="https://www.linkedin.com/company/offbeats-developer-studio/" target="_blank" rel="noopener" color="inherit" sx={{ marginLeft: 1 }}>
+          <Link href="https://www.linkedin.com/company/offbeats/" target="_blank" rel="noopener" color="inherit" sx={{ marginLeft: 1 }}>
             Offbeats Developer Studio
           </Link>
         </Typography>
