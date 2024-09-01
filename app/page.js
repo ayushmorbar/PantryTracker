@@ -117,6 +117,8 @@ export default function Home() {
     }
   }
 
+  const [searchQuery, setSearchQuery] = useState('')
+
   const handleOpen = () => setOpen(true)
   const handleClose = () => {
     setOpen(false)
@@ -203,6 +205,14 @@ export default function Home() {
       <Card sx={{ width: '80%', borderRadius: 2, boxShadow: 3, bgcolor: darkMode ? 'var(--box-bg-dark)' : 'var(--box-bg-light)' }}>
         <CardContent>
           <TableContainer component={Paper} sx={{ bgcolor: darkMode ? 'var(--box-bg-dark)' : 'var(--box-bg-light)' }}>
+          <TextField
+            label="Search"
+            variant="outlined"
+            fullWidth
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ marginBottom: 2 }}
+          />
             <Table>
               <TableHead>
                 <TableRow>
@@ -212,32 +222,34 @@ export default function Home() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {inventory.map(({ name, quantity }) => (
-                  <TableRow key={name} hover>
-                    <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)' }}>{name.charAt(0).toUpperCase() + name.slice(1)}</TableCell>
-                    <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)' }}>{quantity}</TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={2}>
-                        <Tooltip title="Add">
-                          <IconButton
-                            onClick={() => addItem(name)}
-                            sx={{ borderColor: 'var(--primary-light)', color: 'var(--primary-light)', '&:hover': { borderColor: 'var(--primary-dark)', color: 'var(--primary-dark)' } }}
-                          >
-                            <AddIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Remove">
-                          <IconButton
-                            onClick={() => removeItem(name)}
-                            sx={{ borderColor: 'var(--secondary-light)', color: 'var(--secondary-light)', '&:hover': { borderColor: 'var(--secondary-dark)', color: 'var(--secondary-dark)' } }}
-                          >
-                            <RemoveIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))}
+              {inventory
+              .filter(({ name }) => name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map(({ name, quantity }) => (
+                <TableRow key={name} hover>
+                  <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)' }}>{name.charAt(0).toUpperCase() + name.slice(1)}</TableCell>
+                  <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)' }}>{quantity}</TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={2}>
+                      <Tooltip title="Add">
+                        <IconButton
+                          onClick={() => addItem(name)}
+                          sx={{ borderColor: 'var(--primary-light)', color: 'var(--primary-light)', '&:hover': { borderColor: 'var(--primary-dark)', color: 'var(--primary-dark)' } }}
+                        >
+                          <AddIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Remove">
+                        <IconButton
+                          onClick={() => removeItem(name)}
+                          sx={{ borderColor: 'var(--secondary-light)', color: 'var(--secondary-light)', '&:hover': { borderColor: 'var(--secondary-dark)', color: 'var(--secondary-dark)' } }}
+                        >
+                          <RemoveIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
               </TableBody>
             </Table>
           </TableContainer>
