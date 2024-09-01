@@ -1,0 +1,270 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Box, Stack, Typography, Button, Modal, TextField, CircularProgress, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, Snackbar, IconButton, Tooltip, Link } from '@mui/material'
+import { Add as AddIcon, Remove as RemoveIcon, Close as CloseIcon } from '@mui/icons-material'
+import { firestore } from '@/firebase'
+import {
+  collection,
+  doc,
+  getDocs,
+  query,
+  setDoc,
+  deleteDoc,
+  getDoc,
+} from 'firebase/firestore'
+
+const style = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 400,
+  bgcolor: 'var(--modal-bg-light)',
+  border: '2px solid #000',
+  boxShadow: 24,
+  p: 4,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 3,
+}
+
+export default function Home() {
+  const [inventory, setInventory] = useState([])
+  const [open, setOpen] = useState(false)
+  const [itemName, setItemName] = useState('')
+  const [itemQuantity, setItemQuantity] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [darkMode, setDarkMode] = useState(true)
+  const [snackbarOpen, setSnackbarOpen] = useState(false)
+  const [snackbarMessage, setSnackbarMessage] = useState('')
+
+  const updateInventory = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const snapshot = query(collection(firestore, 'inventory'))
+      const docs = await getDocs(snapshot)
+      const inventoryList = []
+      docs.forEach((doc) => {
+        inventoryList.push({ name: doc.id, ...doc.data() })
+      })
+      setInventory(inventoryList)
+    } catch (err) {
+      setError('Failed to fetch inventory')
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  useEffect(() => {
+    updateInventory()
+  }, [])
+
+  useEffect(() => {
+    document.body.classList.toggle('dark-mode', darkMode)
+  }, [darkMode])
+
+  const addItem = async (item, quantity) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const docRef = doc(collection(firestore, 'inventory'), item)
+      const docSnap = await getDoc(docRef)
+      const quantityToAdd = quantity ? parseInt(quantity, 10) : 1
+      if (docSnap.exists()) {
+        const { quantity: existingQuantity } = docSnap.data()
+        await setDoc(docRef, { quantity: existingQuantity + quantityToAdd })
+      } else {
+        await setDoc(docRef, { quantity: quantityToAdd })
+      }
+      await updateInventory()
+      setSnackbarMessage('Item added successfully')
+      setSnackbarOpen(true)
+    } catch (err) {
+      setError('Failed to add item')
+      setSnackbarMessage('Failed to add item')
+      setSnackbarOpen(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  const removeItem = async (item) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const docRef = doc(collection(firestore, 'inventory'), item)
+      const docSnap = await getDoc(docRef)
+      if (docSnap.exists()) {
+        const { quantity } = docSnap.data()
+        if (quantity === 1) {
+          await deleteDoc(docRef)
+        } else {
+          await setDoc(docRef, { quantity: quantity - 1 })
+        }
+      }
+      await updateInventory()
+      setSnackbarMessage('Item removed successfully')
+      setSnackbarOpen(true)
+    } catch (err) {
+      setError('Failed to remove item')
+      setSnackbarMessage('Failed to remove item')
+      setSnackbarOpen(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleOpen = () => setOpen(true)
+  const handleClose = () => {
+    setOpen(false)
+    setItemName('')
+    setItemQuantity('')
+  }
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false)
+  }
+
+  return (
+    <Box
+      width="100vw"
+      height="100vh"
+      display="flex"
+      justifyContent="center"
+      flexDirection="column"
+      alignItems="center"
+      gap={2}
+      padding={3}
+      bgcolor={darkMode ? 'var(--background-dark)' : 'var(--background-light)'}
+    >
+      <Box display="flex" justifyContent="flex-end" width="100%" padding={2} position="absolute" top={0} right={0}>
+        <Typography variant="body1" color={darkMode ? 'var(--text-dark)' : 'var(--text-light)'}>Dark Mode</Typography>
+        <Switch checked={darkMode} onChange={() => setDarkMode(!darkMode)} />
+      </Box>
+      <Typography variant="h3" component="h1" gutterBottom>
+        Inventory Management System
+      </Typography>
+      <Typography variant="body1" gutterBottom>
+        Keep track of your inventory items with ease.
+      </Typography>
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box sx={{ ...style, bgcolor: darkMode ? 'var(--modal-bg-dark)' : 'var(--modal-bg-light)' }}>
+          <Typography id="modal-modal-title" variant="h6" component="h2" marginBottom={2}>
+            Add Item
+          </Typography>
+          <Stack width="100%" direction="column" spacing={2}>
+            <TextField
+              id="outlined-basic"
+              label="Item"
+              variant="outlined"
+              fullWidth
+              value={itemName}
+              onChange={(e) => setItemName(e.target.value)}
+            />
+            <TextField
+              id="outlined-quantity"
+              label="Quantity (optional)"
+              variant="outlined"
+              fullWidth
+              value={itemQuantity}
+              onChange={(e) => setItemQuantity(e.target.value)}
+            />
+            <Button
+              variant="contained"
+              onClick={() => {
+                addItem(itemName, itemQuantity)
+                handleClose()
+              }}
+              sx={{ bgcolor: 'var(--primary-light)', '&:hover': { bgcolor: 'var(--primary-dark)' } }}
+            >
+              Add
+            </Button>
+          </Stack>
+        </Box>
+      </Modal>
+      <Button
+        variant="contained"
+        onClick={handleOpen}
+        sx={{ bgcolor: 'var(--primary-light)', '&:hover': { bgcolor: 'var(--primary-dark)' } }}
+      >
+        Add New Item
+      </Button>
+      {loading && <CircularProgress />}
+      {error && <Typography color="error">{error}</Typography>}
+      <Card sx={{ width: '80%', borderRadius: 2, boxShadow: 3, bgcolor: darkMode ? 'var(--box-bg-dark)' : 'var(--box-bg-light)' }}>
+        <CardContent>
+          <TableContainer component={Paper} sx={{ bgcolor: darkMode ? 'var(--box-bg-dark)' : 'var(--box-bg-light)' }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)', fontWeight: 'bold' }}>Item Name</TableCell>
+                  <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)', fontWeight: 'bold' }}>Quantity</TableCell>
+                  <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)', fontWeight: 'bold' }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {inventory.map(({ name, quantity }) => (
+                  <TableRow key={name} hover>
+                    <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)' }}>{name.charAt(0).toUpperCase() + name.slice(1)}</TableCell>
+                    <TableCell style={{ color: darkMode ? 'var(--text-dark)' : 'var(--text-light)' }}>{quantity}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={2}>
+                        <Tooltip title="Add">
+                          <IconButton
+                            onClick={() => addItem(name)}
+                            sx={{ borderColor: 'var(--primary-light)', color: 'var(--primary-light)', '&:hover': { borderColor: 'var(--primary-dark)', color: 'var(--primary-dark)' } }}
+                          >
+                            <AddIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Remove">
+                          <IconButton
+                            onClick={() => removeItem(name)}
+                            sx={{ borderColor: 'var(--secondary-light)', color: 'var(--secondary-light)', '&:hover': { borderColor: 'var(--secondary-dark)', color: 'var(--secondary-dark)' } }}
+                          >
+                            <RemoveIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        message={snackbarMessage}
+        action={
+          <IconButton size="small" aria-label="close" color="inherit" onClick={handleSnackbarClose}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        }
+      />
+      <Box component="footer" mt={4} textAlign="center">
+        <Typography variant="body2" color={darkMode ? 'var(--text-dark)' : 'var(--text-light)'}>
+          Made with ❤️ by 
+          <Link href="https://www.linkedin.com/in/ayush-morbar/" target="_blank" rel="noopener" color="inherit" sx={{ marginLeft: 1, marginRight: 1 }}>
+            Ayush Morbar
+          </Link>
+          and 
+          <Link href="https://www.linkedin.com/company/offbeats-developer-studio/" target="_blank" rel="noopener" color="inherit" sx={{ marginLeft: 1 }}>
+            Offbeats Developer Studio
+          </Link>
+        </Typography>
+      </Box>
+    </Box>
+  )
+}
